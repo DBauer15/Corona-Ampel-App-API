@@ -1,26 +1,35 @@
 ampel_info = {
     '1': {
-        'stufe': 1,
-        'farbe': '#5CAE59',
+        'level': 1,
+        'backgroundColor': '#5CAE59',
+        'color': '#FFFFFF',
         'name': u'Grün',
-        'info': 'geringes Risiko',
+        'info': 'Geringes Risiko',
     },
     '2': {
-        'stufe': 2,
-        'farbe': '#F8D21C',
+        'level': 2,
+        'backgroundColor': '#F8D21C',
+        'color': '#333333',
         'name': 'Gelb',
-        'info': 'mittleres Risiko',
+        'info': 'Mittleres Risiko',
     },
     '3': {
-        'stufe': 3,
-        'farbe': '#EC931A',
+        'level': 3,
+        'backgroundColor': '#EC931A',
+        'color': '#333333',
         'name': 'Orange',
-        'info': 'hohes Risiko',
+        'info': 'Hohes Risiko',
     },
     '4': {
-        'stufe': 4,
-        'farbe': '#BC0035',
+        'level': 4,
+        'backgroundColor': '#BC0035',
+        'color': '#FFFFFF',
         'name': 'Rot',
-        'info': 'sehr hohes Risiko',
+        'info': 'Sehr Hohes Risiko',
     },
+}
+
+ampel_data = {
+    'lastUpdate': 0,
+    'data': None
 }

@@ -1,11 +1,16 @@
 import flask
+import random
+from flask_cors import cross_origin
 import requests
 import json
-from ampel import ampel_info
+from datetime import datetime
+from dateutil import parser
+from ampel import ampel_info, ampel_data
 
 app = flask.Flask(__name__)
 
 @app.route('/coord')
+@cross_origin()
 def coord():
     bad_request = flask.Response(status=400)
 
@@ -22,12 +27,14 @@ def coord():
         return bad_request
     
     postcode = coord['address']['postcode']
-    ampel_status = get_ampel_status(postcode)
+    ampel_status, stand = get_ampel_status(postcode)
     ampel_info = get_ampel_info(ampel_status)
+    #ampel_info = get_ampel_info(str(random.randint(1,4)))
 
     return {
         'postcode': postcode,
         'ampel_status': ampel_status,
+        'stand': stand,
         'ampel_info': ampel_info,
     }
 
@@ -48,18 +55,41 @@ def validate_coord(coord):
 
 def get_ampel_status(postcode):
 
-    r = requests.get('https://corona-ampel.gv.at/sites/corona-ampel.gv.at/files/assets/Warnstufen_Corona_Ampel_aktuell.json')
-
-    response = r.json()
-    warnstufen = response[0]['Warnstufen']
+    data = get_ampel_data()
+    warnstufen = data['Warnstufen']
+    stand = int(parser.parse(data['Stand']).timestamp())
     
     for region in warnstufen:
         # If the region code is part of the postcode we have a match
         if region['GKZ'] == postcode[:len(region['GKZ'])]:
-            return region['Warnstufe']
+            return region['Warnstufe'], stand
 
-    # If there's not entry, there's no threat
-    return 1
+    # If there's no entry, there's no threat
+    return 1, stand
 
 def get_ampel_info(ampel_status):
     return ampel_info[ampel_status]
+
+
+def get_ampel_data():
+    timestamp = datetime.now().timestamp()
+
+    # The data is too old, we need to update
+    if timestamp - ampel_data['lastUpdate'] > 60 * 60 * 1: #Update every hour
+        print('UPDATING AMPEL DATA')
+        r = requests.get('https://corona-ampel.gv.at/sites/corona-ampel.gv.at/files/assets/Warnstufen_Corona_Ampel_aktuell.json')
+
+        response = r.json()
+
+        newestTime = 0
+        newestEntry = None
+        for entry in response:
+            entryTime = parser.parse(entry['Stand']).timestamp()
+            if entryTime > newestTime:
+                newestTime = entryTime
+                newestEntry = entry
+        
+        ampel_data['lastUpdate'] = timestamp
+        ampel_data['data'] = newestEntry
+    
+    return ampel_data['data']
