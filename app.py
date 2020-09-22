@@ -6,30 +6,31 @@ import json
 from datetime import datetime
 from dateutil import parser
 from ampel import ampel_info, ampel_data
+from util import plz_to_gkz
 
 app = flask.Flask(__name__)
 
 @app.route('/coord')
 @cross_origin()
 def coord():
-    bad_request = flask.Response(status=400)
-
     lat = flask.request.args.get('lat', default = -1, type = float)
     lon = flask.request.args.get('lon', default = -1, type = float)
 
     if not validate_request(lat, lon):
-        return bad_request
+        return 'INVALID_REQUEST', 400
     
     r = requests.get(f'https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json')
     
     coord = r.json()
     if not validate_coord(coord):
-        return bad_request
+        return 'INVALID_COORD', 400
     
     postcode = coord['address']['postcode']
     ampel_status, stand = get_ampel_status(postcode)
+    if ampel_status == -1:
+        return 'OUT_OF_REGION', 400
+
     ampel_info = get_ampel_info(ampel_status)
-    #ampel_info = get_ampel_info(str(random.randint(1,4)))
 
     return {
         'postcode': postcode,
@@ -59,13 +60,17 @@ def get_ampel_status(postcode):
     warnstufen = data['Warnstufen']
     stand = int(parser.parse(data['Stand']).timestamp())
     
+    if postcode not in plz_to_gkz:
+        return -1, stand
+
     for region in warnstufen:
         # If the region code is part of the postcode we have a match
-        if region['GKZ'] == postcode[:len(region['GKZ'])]:
+        #if region['GKZ'] == postcode[:len(region['GKZ'])]:
+        if region['GKZ'] == plz_to_gkz[postcode][:len(region['GKZ'])]:
             return region['Warnstufe'], stand
 
     # If there's no entry, there's no threat
-    return 1, stand
+    return -1, stand
 
 def get_ampel_info(ampel_status):
     return ampel_info[ampel_status]
