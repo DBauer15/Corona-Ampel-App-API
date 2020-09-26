@@ -40,7 +40,7 @@ def coord():
     }
 
 def validate_request(lat, lon):
-    if (lat < 0 or lon < 0):
+    if (lat < -90 or lat > 90 or lon < -180 or lon > 180):
         return False
     return True
 
