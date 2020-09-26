@@ -82,7 +82,7 @@ def get_ampel_data():
     # The data is too old, we need to update
     if timestamp - ampel_data['lastUpdate'] > 60 * 60 * 1: #Update every hour
         print('UPDATING AMPEL DATA')
-        r = requests.get('https://corona-ampel.gv.at/sites/corona-ampel.gv.at/files/assets/Warnstufen_Corona_Ampel_aktuell.json')
+        r = requests.get('https://corona-ampel.gv.at/sites/corona-ampel.gv.at/files/assets/Warnstufen_Corona_Ampel_aktuell_1.json')
 
         response = r.json()
 
