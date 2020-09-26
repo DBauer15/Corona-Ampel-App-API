@@ -17,18 +17,23 @@ def coord():
     lon = flask.request.args.get('lon', default = -1, type = float)
 
     if not validate_request(lat, lon):
-        return 'INVALID_REQUEST', 400
+        return error('INVALID_REQUEST'), 400
     
-    r = requests.get(f'https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json')
-    
-    coord = r.json()
+    try:
+        r = requests.get(f'https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json')    
+        coord = r.json()
+    except:
+        return error('INVALID_REQUEST'), 400
+
     if not validate_coord(coord):
-        return 'INVALID_COORD', 400
+        return error('INVALID_COORD'), 400
     
     postcode = coord['address']['postcode']
     ampel_status, stand = get_ampel_status(postcode)
     if ampel_status == -1:
-        return 'OUT_OF_REGION', 400
+        return error('OUT_OF_REGION'), 400
+    if ampel_status == -2:
+        return error('NEW_DATA_SOURCE'), 400
 
     ampel_info = get_ampel_info(ampel_status)
 
@@ -55,8 +60,10 @@ def validate_coord(coord):
     return True
 
 def get_ampel_status(postcode):
-
-    data = get_ampel_data()
+    try:
+        data = get_ampel_data()
+    except:
+        return -2, None
     warnstufen = data['Warnstufen']
     stand = int(parser.parse(data['Stand']).timestamp())
     
@@ -98,3 +105,12 @@ def get_ampel_data():
         ampel_data['data'] = newestEntry
     
     return ampel_data['data']
+
+def error(code, title='', description=''):
+    return {
+               'code': code,
+               'message': {
+                            'title': title,
+                            'description': description
+                        }
+           }
